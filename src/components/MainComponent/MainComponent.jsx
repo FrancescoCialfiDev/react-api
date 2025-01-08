@@ -1,41 +1,43 @@
-// Importiamo lo useState di React per rendere le nostre variabili reattive
-import { useState } from "react"
-import { useEffect } from "react"
-import axios from "axios"
-// Creiamo una funzione / componente con un return che include la logica e la struttura html della pagina.
-// Utilizziamo un export inline su una costante inizializzata ad una funzione anonima. All'interno passiamo come argomento il prop passato al componente.
+import { useState } from "react" // Importiamo lo useState di React per rendere le nostre variabili reattive
+import { useEffect } from "react" // Importiamo lo useEffect di React per sincronizzare il caricamento dei dati o prevenire effetti collaterali.
+import axios from "axios" // Importiamo la libreria axios per effettuare le chiamate api.
+import { CreateCard } from "../CardComponent.jsx/CardComponent"
+
+const apiUrl = "http://localhost:3000/foods"
 
 export const MainComponent = () => {
 
-    const [reactData, setReactData] = useState([]) // Creaimo una variabile reattiva inizializzata al valore di dataCopy
-    useEffect(() => {
+    const [reactData, setReactData] = useState([]) // Creaimo una variabile reattiva inizializzata ad un array vuoto al quale poi passeremo tramite chiamata api i dati.
+    const getData = () => {
+        axios.get(apiUrl)
+            .then((res) => { setReactData(res.data.foods.posts) })
+            .catch((error) => { console.log(error) })
+            .finally(() => { console.log("finito") })
+    } // Creazione di una funzione con chiamata api per ottenere i dati dal BE
 
-        axios.get("http://localhost:3000/foods").then((res) => {
-            setReactData(res.data.foods.posts)
-        })
+    useEffect(getData, []) // Rendiamo il getData riutilizzabile separandolo dallo use effect, cosi da non incorporarlo al suo
+
+    //Remove Click Function
+    // const removeClick = () => {
+    //     // Verifichiamo che l'id dell'elemento cliccato sia diverso da quello presente negli elementi dell'array
+    //     // Cosi da creare un array con solo all'interno gli oggetti con id diverso da quello cliccato, cosi da eliminare quelli con id uguale.
+    //     const updateData = reactData.filter(element => element.id != event.target.closest(".card").id);
+    //     setReactData(updateData); // Aggiorniamo lo stato della variabile.
+
+    // }
 
 
-    }, [])
-
-    // Creiamo una costante per generare tutte le card dell'array e lavoriamo sulla variabile reattiva.
-    const newElement = reactData.map((element) => {
-        return (
-            //  element.published && ( // Questa condizione ci permettere di mostrare le card se la proprietà published risulta "true"
-            <div className="col-xl-3 col-md-4 col-sm-6" key={element.id}>
-                <div className="card" id={element.id}>
-                    <img src={element.image} className="card-img-top" alt={element.title} />
-                    <div className="card-body">
-                        <h5 className="card-title">{element.title}</h5>
-                        <p className="card-text m-0">{element.content}</p>
-                        <p className="m-0">{"Available:" + " " + String(element.published)}</p>
-                        <a href="#" className="btn btn-secondary">Show Details</a>
-                        <button type="button" className="btn btn-danger mx-1" onClick={() => removeClick(element.id)}>Delete</button>
-                    </div>
-                </div>
-            </div>
-            // )
-        )
-    })
+    const removeDataItem = (id) => {
+        axios.delete(`${apiUrl}/${id}`)
+            .then(() => {
+                // Dopo aver eliminato l'elemento nel backend, aggiorniamo lo stato (React) per rimuoverlo dal frontend.
+                setReactData(prevData => prevData.filter(item => item.id !== id));
+                console.log(`Item with ID ${id} deleted successfully`);
+            })
+            .catch((error) => {
+                console.error('Error deleting item:', error);
+            });
+    };
 
     // State of variables - Stato reattivo delle variabili del form.
     // const [title, setTitle] = useState("");
@@ -72,16 +74,6 @@ export const MainComponent = () => {
 
     }
 
-    //Remove Click Function
-    function removeClick() {
-        // Verifichiamo che l'id dell'elemento cliccato sia diverso da quello presente negli elementi dell'array
-        // Cosi da creare un array con solo all'interno gli oggetti con id diverso da quello cliccato, cosi da eliminare quelli con id uguale.
-        const updateData = reactData.filter(element => element.id != event.target.closest(".card").id);
-        setReactData(updateData); // Aggiorniamo lo stato della variabile.
-
-
-    }
-
     // Function for change Input - Modifichiamo il valore della nuova card creata con i valori inseriti nel form.
     // const changeTitle = (event) => {
     //     setTitle(event.target.value);
@@ -93,6 +85,9 @@ export const MainComponent = () => {
     // const changeContent = (event) => {
     //     setContent(event.target.value);
     // }
+
+
+
     function handleFormData(e) {
 
         const value =
@@ -115,7 +110,7 @@ export const MainComponent = () => {
 
         <main className="d-flex" >
             <div className="formContainer">
-                <form className="p-5 bg-white rounded-3 m-4" onSubmit={submitFunction}>
+                <form className="p-5 bg-white rounded-3 m-3" onSubmit={submitFunction}>
                     <div className="form-group">
                         <label htmlFor="titleForm"><span className="fw-bold">Card&apos;s Name</span></label>
                         <input name="title" type="text" value={formData.title} className="form-control" id="titleForm" placeholder="Es: React Components" onChange={handleFormData} />
@@ -147,7 +142,7 @@ export const MainComponent = () => {
 
             <div className="container">
                 <div className="row align-items-center">
-                    {newElement}
+                    <CreateCard data={reactData} remove={removeDataItem} />
                 </div>
             </div>
         </main >
